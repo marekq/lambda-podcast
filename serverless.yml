@@ -1,0 +1,13 @@
+service: lambda-podcast 
+
+provider:
+  name: aws
+  runtime: python2.7
+  memorySize: 128 
+  timeout: 60
+  stage: dev
+  region: eu-west-1
+
+functions:
+  podcast:
+    handler: mp3.handler
