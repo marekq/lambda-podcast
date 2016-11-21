@@ -2,19 +2,19 @@ import urllib2, boto3, time, eyed3
 from lxml import etree
 
 s3_region_name	= 'eu-west-1'		# region where both the music and publish bucket are located
-s3_musicbucket	= '<musicbucket>'	# bucket name containing all mp3 files
+s3_musicbucket 	= '<musicbucket>'	# bucket name containing all mp3 files
 
-s3_webbucket	= '<webbucket>' 	# bucket name where the podcast rss xml should be written to
-s3_res_file		= 'rss.xml'			# filename that should be used on the podcast publish bucket
-tmp_rss_file	= '/tmp/rss.xml'  	# temp file to be used by the lambda function
+s3_webbucket 	= '<webbucket>' 	# bucket name where the podcast rss xml should be written to
+s3_res_file 	= 'rss.xml'			# filename that should be used on the podcast publish bucket
+tmp_rss_file 	= '/tmp/rss.xml'  	# temp file to be used by the lambda function
 
-link_expiry		= '43200'			# s3 signed url's should expiry after x seconds
+link_expiry 	= '43200'			# s3 signed url's should expiry after x seconds
 
-podcast_name	= 'my mixtapes and podcasts'
-podcast_desc	= 'my collection of mp3\'s'
-podcast_url		= 'https://marek.rocks'
-podcast_img		= '<url to a logo image>'
-podcast_author	= '@marekq'
+podcast_name 	= 'my mixtapes and podcasts'
+podcast_desc 	= 'my collection of mp3\'s'
+podcast_url 	= 'https://marek.rocks'
+podcast_img 	= '<url to a logo image>'
+podcast_author 	= '@marekq'
 
 ###########
 
