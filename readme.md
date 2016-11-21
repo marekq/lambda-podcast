@@ -45,6 +45,18 @@ You can now add the XML's URL to your favourite podcast reader and stream music 
 
 
 
+Contents of repository
+----------------------
+
+
+- The Lambda function code is in mp3.py, this file also contains the handler which is used to trigger the function whenever a change happens in the S3 music bucket. Set your Lambda handler to "mp3.handler" to trigger the function. 
+
+- The LXML and eyeD3 folders contain Python libraries for generation of XML and identification of ID3 tags. These libraries were built on the Amazon Linux AMI and are precompiled for you to use in the Lambda function directly. 
+
+- The serverless.yml file contains a template for deployment using the Serverless toolkit - this needs to be further expanded so that the service can be deployed using this template automatically. 
+
+
+
 Feature requests
 ----------------
 
