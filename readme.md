@@ -49,19 +49,19 @@ Feature requests
 ----------------
 
 
-* Cache the results from ID3 analysis into DynamoDB so files dont need to be analyzed every time the podcast is regenerated. This will drive down cost and makes the tool a lot more scalable.  
+- [ ] Cache the results from ID3 analysis into DynamoDB so files dont need to be analyzed every time the podcast is regenerated. This will drive down cost and makes the tool a lot more scalable.  
 
-* Implement inclusion of podcast links not hosted on personal S3 buckets (i.e. SoundCloud, third party podcasts). This would make the lambda-podcast a onestop shop for podcasts/mixtapes with the flexibility to stream or download music as you wish. 
+- [ ] Implement inclusion of podcast links not hosted on personal S3 buckets (i.e. SoundCloud, third party podcasts). This would make the lambda-podcast a onestop shop for podcasts/mixtapes with the flexibility to stream or download music as you wish. 
 
-* Explore if native Python libraries available in Lambda can be used instead of bundling them with the code. This would eliminate any future compatability issues (i.e. switching to Python 3).
+- [ ] Explore if native Python libraries available in Lambda can be used instead of bundling them with the code. This would eliminate any future compatability issues (i.e. switching to Python 3).
 
-* Make the podcast feed iTunes compatible so that it could be used for official iTunes podcasts - it is currently unknown if there are hard roadblocks to do so. Some requirements include specific iTunes XML tags and ensuring the SSL certificate is recognized by iTunes. 
+- [ ] Make the podcast feed iTunes compatible so that it could be used for official iTunes podcasts - it is currently unknown if there are hard roadblocks to do so. Some requirements include specific iTunes XML tags and ensuring the SSL certificate is recognized by iTunes. 
 
-* Explore if streaming music onto Sonos and Denon music players is possible from S3 directly or through i.e. iHeart. This would allow wireless streaming onto these speaker sets without the need for a local NAS on your network.  
+- [ ] Explore if streaming music onto Sonos and Denon wireless music players is possible from S3 directly or through i.e. iHeart. This would allow wireless streaming onto these speaker sets without the need for a local NAS on your network.  
 
-* Figure out if S3 signed URL's can be shortened to less characters, this would make the filesize of the generated XML significantly smaller.
+- [ ] Figure out if S3 signed URL's can be shortened to less characters, this would make the filesize of the generated XML significantly smaller.
 
-* Create a CloudFormation template which would preconfigure all components for you, eliminating the need for a manual setup. 
+- [ ] Create a CloudFormation template and ZIP which would preconfigure all components for you, eliminating the need for a manual setup. To do so, Lambda environment variables need to be included as parameters for the podcast instead of having to modify variables by hand in the Python source code. 
 
 
 
