@@ -13,13 +13,13 @@ Technical Description
 The Lambda function can run periodically to add/remove podcast files from the S3 bucket containing your music. The XML file read by your podcast client can optionally be written to a different S3 bucket with webhosting enabled. Metadata about analyzed MP3's (i.e. filesize, ID3 tags) are cached in a DynamoDB table to speed up podcast generation. 
 
 
+The diagram below shows the technical components of lambda-podcast;
+
+
 ![alt tag](https://raw.githubusercontent.com/marekq/lambda-podcast/master/docs/1.png)
 
 
 Besides generating public podcasts, the tool can be used to synchronize music onto an iPhone/iPad using a podcast app such as DownCast instead of needing iTunes. I personally use it as such to have all my music and mixtapes available for streaming and/or downloading across all my mobile devices and laptops. By eliminating the need for a webserver to host the podcast contents, you can run the podcast service for very low cost and with no periodic maintenance requirements (i.e. patching, running services, setting cronjobs etc.). 
-
-
-The lambda-podcast can be used to generate a podcast feed out of a S3 bucket without the need of running an EC2 instance. By using signed URL's to access content from S3, you can optionally grant temporary access to MP3 files on your S3 bucket to avoid hotlinking and therefor potentially high bandwidth costs. 
 
 
 A 128 MB Lambda function with a 60 second timeout should be sufficient up to a 1000 MP3's if you rely on the folder structure of your S3 bucket for naming. If you want to use ID3 tags from the MP3 files, the Lambda function will run significantly longer as it does need to download and analyze the first kilobyte of every MP3 file first, but I'll work on a better solution for this. 
@@ -62,11 +62,9 @@ Contents of repository
 
 
 
-Feature requests
-----------------
+Pending feature requests
+------------------------
 
-
-~~- Cache the results from ID3 analysis into DynamoDB so files dont need to be analyzed every time the podcast is regenerated. This will drive down cost and makes the tool a lot more scalable.~~
 
 - Implement inclusion of podcast links not hosted on personal S3 buckets (i.e. SoundCloud, third party podcasts). This would make the lambda-podcast a onestop shop for podcasts/mixtapes with the flexibility to stream or download music as you wish from one app. 
 
@@ -78,7 +76,15 @@ Feature requests
 
 - Figure out if S3 signed URL's can be shortened to less characters, this would make the filesize of the generated XML significantly smaller and more scalable. 
 
+
+
+Completed feature requests
+--------------------------
+
+
 ~~- Create a CloudFormation template and ZIP which would preconfigure all components for you, eliminating the need for a manual setup. To do so, Lambda environment variables need to be included as parameters for the podcast instead of having to modify variables by hand in the Python source code.~~ 
+
+~~- Cache the results from ID3 analysis into DynamoDB so files dont need to be analyzed every time the podcast is regenerated. This will drive down cost and makes the tool a lot more scalable.~~
 
 
 
