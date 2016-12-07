@@ -2,22 +2,27 @@ lambda-podcast
 ==============
 
 
-Create a serverless podcast service using Amazon S3 for storage of music files and Lambda for generating the podcast feed. The Lambda function can run periodically to add/remove podcast files from the S3 bucket containing your music. The XML file read by your podcast client can optionally be written to a different S3 bucket with webhosting enabled. Metadata about analyzed MP3's (i.e. filesize, ID3 tags) are cached in a DynamoDB table to speed up podcast generation.
-
-The tool can also be used to synchronize music onto an iPhone/iPad using a podcast app such as DownCast instead of needing iTunes - I personally use it as such to have all my music available for streaming and/or downloading across all my devices. By eliminating the need for a webserver to host the podcast contents, you can run the podcast service for very low cost and with no periodic maintenance requirements (i.e. patching, running services, setting cronjobs etc.). 
+Create a serverless podcast service using Amazon S3 for storage of music files and Lambda for generation of the podcast feed. Since the podcast uses serverless components exclusively, you can run this service for very minimal cost and with very high durability.
 
 
 
-Description
------------
+Technical Description
+---------------------
+
+
+The Lambda function can run periodically to add/remove podcast files from the S3 bucket containing your music. The XML file read by your podcast client can optionally be written to a different S3 bucket with webhosting enabled. Metadata about analyzed MP3's (i.e. filesize, ID3 tags) are cached in a DynamoDB table to speed up podcast generation. 
+
+
+![alt tag](https://raw.githubusercontent.com/marekq/lambda-podcast/master/docs/1.png)
+
+
+Besides generating public podcasts, the tool can be used to synchronize music onto an iPhone/iPad using a podcast app such as DownCast instead of needing iTunes. I personally use it as such to have all my music and mixtapes available for streaming and/or downloading across all my mobile devices and laptops. By eliminating the need for a webserver to host the podcast contents, you can run the podcast service for very low cost and with no periodic maintenance requirements (i.e. patching, running services, setting cronjobs etc.). 
 
 
 The lambda-podcast can be used to generate a podcast feed out of a S3 bucket without the need of running an EC2 instance. By using signed URL's to access content from S3, you can optionally grant temporary access to MP3 files on your S3 bucket to avoid hotlinking and therefor potentially high bandwidth costs. 
 
+
 A 128 MB Lambda function with a 60 second timeout should be sufficient up to a 1000 MP3's if you rely on the folder structure of your S3 bucket for naming. If you want to use ID3 tags from the MP3 files, the Lambda function will run significantly longer as it does need to download and analyze the first kilobyte of every MP3 file first, but I'll work on a better solution for this. 
-
-
-![alt tag](https://raw.githubusercontent.com/marekq/lambda-podcast/master/docs/1.png)
 
 
 
