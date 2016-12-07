@@ -82,9 +82,9 @@ Completed feature requests
 --------------------------
 
 
-~~- Create a CloudFormation template and ZIP which would preconfigure all components for you, eliminating the need for a manual setup. To do so, Lambda environment variables need to be included as parameters for the podcast instead of having to modify variables by hand in the Python source code.~~ 
+- Create a CloudFormation template and ZIP which would preconfigure all components for you, eliminating the need for a manual setup. To do so, Lambda environment variables need to be included as parameters for the podcast instead of having to modify variables by hand in the Python source code.
 
-~~- Cache the results from ID3 analysis into DynamoDB so files dont need to be analyzed every time the podcast is regenerated. This will drive down cost and makes the tool a lot more scalable.~~
+- Cache the results from ID3 analysis into DynamoDB so files dont need to be analyzed every time the podcast is regenerated. This will drive down cost and makes the tool a lot more scalable.
 
 
 
