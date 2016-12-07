@@ -1,63 +1,98 @@
-import urllib2, boto3, time, eyed3
+import urllib2, boto3, time, eyed3, os
 from lxml import etree
-
-s3_region_name	= 'eu-west-1'		# region where both the music and publish bucket are located
-s3_musicbucket 	= '<musicbucket>'	# bucket name containing all mp3 files
-
-s3_webbucket 	= '<webbucket>' 	# bucket name where the podcast rss xml should be written to
-s3_res_file 	= 'rss.xml'			# filename that should be used on the podcast publish bucket
-tmp_rss_file 	= '/tmp/rss.xml'  	# temp file to be used by the lambda function
-
-link_expiry 	= '43200'			# s3 signed url's should expiry after x seconds
-
-podcast_name 	= 'my mixtapes and podcasts'
-podcast_desc 	= 'my collection of mp3\'s'
-podcast_url 	= 'https://marek.rocks'
-podcast_img 	= '<url to a logo image>'
-podcast_author 	= '@marekq'
 
 ###########
 
 # create dictionaries 
-fdict			= dict()
-mdict			= dict()
+fdict			= dict() 	# store file size of s3 keys
+mdict			= dict()	# store modified date of s3 keys
+hdict 			= dict() 	# store hashes of s3 keys
 
 
 # iterate over all files in S3 that are mp3, get filesize and modified date
 def get_all_files():
+	# create session to s3 music bucket
 	s 			= boto3.session.Session()
-	c			= s.client('s3', region_name = s3_region_name) 
-	l			= c.list_objects(Bucket = s3_musicbucket)
+	c			= s.client('s3', region_name = os.environ['s3_region_name']) 
+	a			= c.list_objects(Bucket = os.environ['s3_musicbucket'])
 
-	for x in l['Contents']:
+	# create session to s3 webbucket
+	e 			= s3_session(os.environ['s3_webbucket'])
+
+	# create session to dynamodb	
+	d			= boto3.resource('dynamodb', region_name = os.environ['s3_region_name']).Table(os.environ['dynamo_table'])
+
+	# touch an empty file for S3 file redirection - perhaps there is an easier way? 
+	f 	= open('/tmp/s3.txt', 'w')
+	f.write('')
+	f.close()
+
+	for x in a['Contents']:
 		if 'mp3' in x['Key']:
 			
 			# write the size and modified date of the MP3 to dictionaries
 			fdict[x['Key']]	= x['Size']
 			mdict[x['Key']] = x['LastModified']
-			
-			get_file(x['Key'], c)
+			hdict[x['Key']] = x['ETag'].strip('"')
+
+			get_file(x['Key'], c, d, e)
+
+
+# check dynamo if a particular ETag was analyzed already
+def check_dynamo(mp3hash, fkey, d):
+	t 			= d.get_item(TableName = os.environ['dynamo_table'], Key = {'mp3hash': mp3hash})
+
+	if t.has_key('Item'):
+		print 'HIT!', t['Item']['artist'], t['Item']['title']
+		return t['Item']['artist'], t['Item']['title']
+  
+	else:
+		a, t 	= get_id3(fkey)
+		print 'MISS!', a, t
+		return a, t
+
+
+# write the ID3 attributes to DynamoDB so it doesnt need to be recalculated every lambda run 
+def write_dynamo(mp3hash, title, artist):
+	b 			= boto3.resource('dynamodb', region_name = os.environ['s3_region_name']).Table(os.environ['dynamo_table'])
+
+	b.put_item(Item = {
+		'mp3hash' : mp3hash,
+		'title' : artist,
+		'artist' : title
+	})
 
 
 # !disabled ID3 reading since i use the S3 bucket structure instead of tags! 
 # read ID3 tags of the file by downloading the first 1kb from S3
-def get_id3(fkey, c):
+def get_id3(fkey):
 	eyed3.log.setLevel("ERROR")
 
-	r 			= c.get_object(Bucket=s3__musicbucket, Key=fkey, Range='bytes=0-1024')	
+	s 			= boto3.session.Session()
+	c			= s.client('s3', region_name = os.environ['s3_region_name']) 
+	r 			= c.get_object(Bucket = os.environ['s3_musicbucket'], Key = fkey, Range = 'bytes=0-1024')	
 	fn 			= fkey.split('/')[-1]
-	d       	= r['LastModified']
+	mp3hash 	= hdict[fkey]
 
-	# write the first kb of the MP3 to disk
+	print 'added '+fkey+' to dynamodb'
+
+	# write the first kb of the mp3 file to disk
 	f			= open('/tmp/'+fn, 'w')
 	f.write(r['Body'].read())
 	f.close()
 
 	# check the MP3 file for ID3 tags (artist, title)
 	a			= eyed3.load('/tmp/'+fn)
-	return a.tag.artist, a.tag.title
 	
-	# !TODO - extend extraction of more ID3 tags 
+	try:
+		art 	= a.tag.artist
+		track 	= a.tag.title
+	
+	except:
+		art, track 	= fkey.split('/')
+
+	write_dynamo(mp3hash, art, track)
+	return art, track
 
 
 # convert datetime input to proper formatted timestamp
@@ -66,30 +101,37 @@ def return_times(x):
 
 
 # generate a presigned URL and create XML entry for file
-def get_file(fkey, c):
-	z 			= c.generate_presigned_url('get_object', Params = {'Bucket': s3_musicbucket, 'Key': fkey}, ExpiresIn = link_expiry)
-	
-	#art, track	= get_id3(fkey, c) - currently unused, uncomment to enable ID3 reading
-	art, track 	= fkey.split('/')
+def get_file(fkey, c, d, e):
 
-	#enc 		= "url='"+str(z)+"' length='"+str(fdict[fkey])+"' type='audio/mpeg'"
+	# get the ETag for the file
+	mp3hash		= hdict[fkey]
+
+	# create presigned URL for the MP3
+	z 			= c.generate_presigned_url('get_object', Params = {'Bucket': os.environ['s3_musicbucket'], 'Key': fkey}, ExpiresIn = os.environ['link_expiry'])
+	
+	# create a website redirect object in your public S3 bucket to shorten the presigned URL character length and prettify the MP3 URL
+	bkey 		= os.environ['podcast_folder']+'/'+mp3hash[:10]+'.mp3'
+	put_s3(e, os.environ['s3_webbucket'], '/tmp/s3.txt', bkey, z, 'audio/mpeg')
+	
+	# DISABLED - use s3 path and trackname for podcast track properties instead of dynamo 
+	#art, track 	= fkey.split('/')
+	
+	# ask dynamo if the mp3 hash was analyzed already for id3 tags
+	art, track 	= check_dynamo(mp3hash, fkey, d)
+
 	item		= etree.SubElement(channel, 'item')
 	desc 		= etree.SubElement(item, 'description')
 	artist		= etree.SubElement(item, 'artist')
 	title		= etree.SubElement(item, 'title')
 	pubd		= etree.SubElement(item, 'pubDate')
 	size 		= etree.SubElement(item, 'size')
-	enc			= etree.SubElement(item, 'enclosure', url = str(z), length = str(fdict[fkey]), type = 'audio/mpeg')
-	guid		= etree.SubElement(item, 'guid')
-	link 		= etree.SubElement(item, 'link')
+	enc			= etree.SubElement(item, 'enclosure', url = os.environ['podcast_url']+'/'+bkey, length = str(fdict[fkey]), type = 'audio/mpeg')
 
 	desc.text	= fkey
 	artist.text	= art
 	title.text	= track
 	pubd.text	= return_times(mdict[fkey])
 	size.text	= str(fdict[fkey])
-	guid.text	= str(z)
-	link 		= str(z)
 
 
 # create the XML document root
@@ -107,10 +149,10 @@ def make_root():
 	build		= etree.SubElement(channel, 'lastBuildDate')
 	pubd 		= etree.SubElement(channel, 'pubDate')
 
-	title.text	= podcast_name
-	author.text	= podcast_author
-	desc.text	= podcast_desc
-	link.text 	= podcast_url
+	title.text	= os.environ['podcast_name']
+	author.text	= os.environ['podcast_author']
+	desc.text	= os.environ['podcast_desc']
+	link.text 	= os.environ['podcast_url']
 	lang.text	= 'en-us'
 
 	pubd.text 	= return_times(time)
@@ -121,29 +163,45 @@ def make_root():
 	imgtit		= etree.SubElement(image, 'title')
 	imglin		= etree.SubElement(image, 'link')
 
-	imgurl.text	= podcast_img
-	imgtit.text = podcast_desc
-	imglin.text	= podcast_url
+	imgurl.text	= os.environ['podcast_img']
+	imgtit.text = os.environ['podcast_desc']
+	imglin.text	= os.environ['podcast_url']
 
 
-# store the RSS file on S3
-def put_s3(bucketn):
+def s3_session(bucketn):
 	s 			= boto3.resource('s3')
-	c 			= s.Bucket(bucketn)
-	c.put_object(Body = open(tmp_rss_file), Key = s3_res_file, ContentType = 'application/xml')
+	return s.Bucket(os.environ['s3_webbucket'])
 
 
+# store a file on a S3 bucket
+def put_s3(session, bucketn, fbody, fkey, redir, contentt):
+	if len(redir) != 0:
+		session.put_object(Body = open(fbody), Key = fkey, ContentType = contentt, WebsiteRedirectLocation = redir)
+	else:
+		session.put_object(Body = open(fbody), Key = fkey, ContentType = contentt)
+
+	
 # prettify the xml and write to disk
 def prettify_xml():
-	x 			= etree.tostring(rss, xml_declaration=True, encoding='utf-8', pretty_print=True)
-	f 			= open(tmp_rss_file, 'w')
+	x 			= etree.tostring(rss, xml_declaration = True, encoding = 'utf-8', pretty_print = True)
+	f 			= open('/tmp/rss.xml', 'w')
 	f.write(x)
 	f.close()
 
 
 # lambda handler
 def handler(event, context):
- 	make_root()
+	# create the root XML structure
+	make_root()
+	
+	# iterate all files in the music S3 bucket, add URL's and ID3 metadata to XML
 	get_all_files()
+	
+	# prettify the XML so its easier to read
 	prettify_xml()
-	put_s3(s3_webbucket)
+	
+	# get s3 session
+	s 			= s3_session(os.environ['s3_musicbucket'])
+
+	# write the XML file to the public S3 bucket
+	put_s3(s, os.environ['s3_webbucket'], '/tmp/rss.xml', os.environ['s3_res_file'], '', 'application/xml')

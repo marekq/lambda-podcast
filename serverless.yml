@@ -4,9 +4,22 @@ provider:
   name: aws
   runtime: python2.7
   memorySize: 128 
-  timeout: 60
+  timeout: 300
   stage: dev
   region: eu-west-1
+  environment:
+    s3_region_name: <aws-region>    # aws region where both the music and publish bucket are located, i.e. eu-west-1
+    s3_musicbucket: <musicbucket>   # bucket name containing all mp3 files - this bucket can be only privately accessible only to your account and does not need to have website hosting enabled!
+    s3_webbucket: <webbucket>       # bucket name where the podcast rss xml should be written to - it should be webhosting enabled so your podcast player can retrieve the RSS file.
+    s3_res_file: podcast.xml        # filename that should be used for the URL on the podcast publish bucket, you need to enter this path in your podcast player. 
+    link_expiry: 86400              # s3 signed urls should expiry after x seconds - the default is 24 hours which is good enough to prevent hotlinking and high bandwidth costs.
+    podcast_folder: podcast         # s3 folder name in the s3 bucket used to store the redirection files - this way you can create nice looking signed URL's (i.e. https://marek.rocks/podcast/episode-1.mp3 instead of a superlong signed URL).
+    podcast_name: marekq
+    podcast_desc: my collection of mp3s
+    podcast_url: https://marek.rocks
+    podcast_img: https://marek.rocks/podcast.png
+    podcast_author: marekq
+    dynamo_table: <dynamo_table>    # dynamodb table name used for storing id3 data
 
 functions:
   podcast:
