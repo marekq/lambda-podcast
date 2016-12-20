@@ -47,16 +47,16 @@ def check_dynamo(mp3hash, fkey, d):
 		return t['Item']['artist'], t['Item']['title']
   
 	else:
-		a, t 	= get_id3(fkey)
+		a, t 	= get_id3(fkey, d)
 		print 'MISS!', a, t
 		return a, t
 
 
 # write the ID3 attributes to DynamoDB so it doesnt need to be recalculated every lambda run 
-def write_dynamo(mp3hash, title, artist):
-	b 			= boto3.resource('dynamodb', region_name = os.environ['s3_region_name']).Table(os.environ['dynamo_table'])
+def write_dynamo(mp3hash, title, artist, d):
+	#b 			= boto3.resource('dynamodb', region_name = os.environ['s3_region_name'])
 
-	b.put_item(Item = {
+	d.put_item(TableName = os.environ['dynamo_table'], Item = {
 		'mp3hash' : mp3hash,
 		'title' : artist,
 		'artist' : title
@@ -65,7 +65,7 @@ def write_dynamo(mp3hash, title, artist):
 
 # !disabled ID3 reading since i use the S3 bucket structure instead of tags! 
 # read ID3 tags of the file by downloading the first 1kb from S3
-def get_id3(fkey):
+def get_id3(fkey, d):
 	eyed3.log.setLevel("ERROR")
 
 	s 			= boto3.session.Session()
@@ -91,7 +91,7 @@ def get_id3(fkey):
 	except:
 		art, track 	= fkey.split('/')
 
-	write_dynamo(mp3hash, art, track)
+	write_dynamo(mp3hash, art, track, d)
 	return art, track
 
 
