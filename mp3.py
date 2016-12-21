@@ -113,12 +113,13 @@ def get_file(fkey, c, d, e):
 	bkey 		= os.environ['podcast_folder']+'/'+mp3hash[:10]+'.mp3'
 	put_s3(e, os.environ['s3_webbucket'], '/tmp/s3.txt', bkey, z, 'audio/mpeg')
 	
-	# option 1 - use s3 path and trackname for podcast track properties instead of checking id3 tag in dynamo 
+
+	# option 1 - use s3 path and trackname for podcast track properties instead of checking id3 tag in dynamo - do not store the results in dynamo
 	if os.environ['enable_id3'] == 'False' or os.environ['enable_id3'] == 'false':
 		art, track 	= fkey.split('/')
 		print 's3-filename', fkey, art, track
 
-	# option 2 - check dynamo if the mp3 hash was analyzed already for id3 tags - if not, analyse now
+	# option 2 - check dynamo if the mp3 hash was analyzed already for id3 tags - if not, analyse now and write results to dynamo
 	else:	
 		art, track 	= check_dynamo(mp3hash, fkey, d)
 		print 'dynamo-cache', fkey, art, track
@@ -132,7 +133,7 @@ def get_file(fkey, c, d, e):
 	size 		= etree.SubElement(item, 'size')
 	enc			= etree.SubElement(item, 'enclosure', url = os.environ['podcast_url']+'/'+bkey, length = str(fdict[fkey]), type = 'audio/mpeg')
 
-	desc.text	= fkey
+	desc.text	= str(art)+' - '+str(track)
 	artist.text	= art
 	title.text	= track
 	pubd.text	= return_times(mdict[fkey])
@@ -199,13 +200,13 @@ def handler(event, context):
 	# create the root XML structure
 	make_root()
 	
-	# iterate all files in the music S3 bucket, add URL's and ID3 metadata to XML
+	# iterate all files in the music S3 bucket, add URL's and ID3 metadata to the XML
 	get_all_files()
 	
-	# prettify the XML so its easier to read
+	# prettify the XML so its easier to read for humans
 	prettify_xml()
 	
-	# get s3 session
+	# get an s3 session
 	s 			= s3_session(os.environ['s3_musicbucket'])
 
 	# write the XML file to the public S3 bucket
