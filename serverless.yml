@@ -20,6 +20,7 @@ provider:
     podcast_img: https://marek.rocks/podcast.png
     podcast_author: marekq
     dynamo_table: <dynamo_table>    # dynamodb table name used for storing id3 data
+    enable_id3: True                # set to false to disable id3 analysis of mp3 files - in that case, the folder path and folder names will be used instead (i.e. s3://<podcast-name>/<podcast-track-name> )
 
 functions:
   podcast:

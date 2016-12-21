@@ -53,17 +53,17 @@ def check_dynamo(mp3hash, fkey, d):
 
 
 # write the ID3 attributes to DynamoDB so it doesnt need to be recalculated every lambda run 
-def write_dynamo(mp3hash, title, artist, d):
+def write_dynamo(mp3hash, title, artist, fkey, d):
 	#b 			= boto3.resource('dynamodb', region_name = os.environ['s3_region_name'])
 
 	d.put_item(TableName = os.environ['dynamo_table'], Item = {
 		'mp3hash' : mp3hash,
 		'title' : artist,
-		'artist' : title
+		'artist' : title,
+		's3-loc' : fkey
 	})
 
 
-# !disabled ID3 reading since i use the S3 bucket structure instead of tags! 
 # read ID3 tags of the file by downloading the first 1kb from S3
 def get_id3(fkey, d):
 	eyed3.log.setLevel("ERROR")
@@ -91,7 +91,7 @@ def get_id3(fkey, d):
 	except:
 		art, track 	= fkey.split('/')
 
-	write_dynamo(mp3hash, art, track, d)
+	write_dynamo(mp3hash, art, track, fkey, d)
 	return art, track
 
 
@@ -113,11 +113,16 @@ def get_file(fkey, c, d, e):
 	bkey 		= os.environ['podcast_folder']+'/'+mp3hash[:10]+'.mp3'
 	put_s3(e, os.environ['s3_webbucket'], '/tmp/s3.txt', bkey, z, 'audio/mpeg')
 	
-	# DISABLED - use s3 path and trackname for podcast track properties instead of dynamo 
-	#art, track 	= fkey.split('/')
-	
-	# ask dynamo if the mp3 hash was analyzed already for id3 tags
-	art, track 	= check_dynamo(mp3hash, fkey, d)
+	# option 1 - use s3 path and trackname for podcast track properties instead of checking id3 tag in dynamo 
+	if os.environ['enable_id3'] == 'False' or os.environ['enable_id3'] == 'false':
+		art, track 	= fkey.split('/')
+		print 's3-filename', fkey, art, track
+
+	# option 2 - check dynamo if the mp3 hash was analyzed already for id3 tags - if not, analyse now
+	else:	
+		art, track 	= check_dynamo(mp3hash, fkey, d)
+		print 'dynamo-cache', fkey, art, track
+
 
 	item		= etree.SubElement(channel, 'item')
 	desc 		= etree.SubElement(item, 'description')
