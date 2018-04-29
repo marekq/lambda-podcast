@@ -18,12 +18,12 @@ Resources:
       MemorySize: 128
       Timeout: 60
       CodeUri: s3://marek-serverless/podcast.zip
-      Events:
-        S3Event:
-          Type: S3
-          Properties:
-            Bucket: !Ref MusicBucket
-            Events: 's3:ObjectCreated:*'
+      Environment:
+        Variables:
+          s3_bucket: !Ref MusicBucket
+      Policies:
+      - S3CrudPolicy:
+          BucketName: !Ref MusicBucket
   MusicBucket:
     Type: 'AWS::S3::Bucket'
     Properties:
