@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: Name of S3 bucket with MP3 files
+Description: >-
+  Build a serverless podcast feeds using your S3 bucket with music and Lambda
+Resources:
+  lambdapodcast:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: mp3.handler
+      Runtime: python3.6
+      Description: >-
+        Build a serverless podcast feeds using your S3 bucket with music and Lambda
+      MemorySize: 128
+      Timeout: 60
+      CodeUri: s3://marek-serverless/podcast.zip
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref MusicBucket
+            Events: 's3:ObjectCreated:*'
+  MusicBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref BucketName
