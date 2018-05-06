@@ -2,9 +2,9 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31'
 
 Parameters:
-  BucketName:
+  MusicBucket:
     Type: String
-    Description: Name of S3 bucket with MP3 files
+    Description: Name of an existing S3 bucket with MP3 files. Put the artists tracks in separate folders in the root. 
 Description: >-
   Build a serverless podcast feeds using your S3 bucket with music and Lambda
 Resources:
@@ -21,10 +21,11 @@ Resources:
       Environment:
         Variables:
           s3_bucket: !Ref MusicBucket
+      Events:
+        Cron:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 hour)
       Policies:
       - S3CrudPolicy:
           BucketName: !Ref MusicBucket
-  MusicBucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      BucketName: !Ref BucketName
