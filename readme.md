@@ -5,16 +5,6 @@ lambda-podcast
 Create a serverless podcast service using Amazon S3 for storage of music files and Lambda for generation of the podcast feed. Since the podcast uses serverless components exclusively, you can run this service for very minimal cost and with very high durability. You can easily deploy the service to your account using the SAM CLI. 
 
 
-Security
---------
-
-
-The podcast uses a temporary signed S3 URL's to distribute the content to listeners, which prevents hotlinking by others to your bucket. Please be careful sharing the XML feed link openly on the Internet as it could incur high S3 bandwidth charges. 
-
-By default, the XML file with the podcast feed is uploaded as a private object to S3 which cannot be accessed publicly. You can copy the object to a different location in case you want to protect access to the feed. Keep in mind though that the S3 signed URL's expire after a day by default, meaning that clients do need regular access to the feed. In the future, a more robust mechanism will be added to control feed access.
-
-
-
 Technical Description
 ---------------------
 
@@ -40,6 +30,15 @@ Installation
 Installing lambda-podcast on your AWS account can be done easily through a launch script. Clone the repository and run the *deploy.sh* script. It will retrieve the Python packages, upload the Lambda function and deploy the CloudFormation template. You will be asked to set the S3 bucket with your audio files and a few fields that will be included in your XML feed. 
 
 You can now add the XML's URL to your favourite podcast reader and stream music from your S3 bucket.
+
+
+Security
+--------
+
+
+The podcast uses a temporary signed S3 URL's to distribute the content to listeners, which prevents hotlinking by others to your bucket. Please be careful sharing the XML feed link openly on the Internet as it could incur high S3 bandwidth charges. 
+
+By default, the XML file with the podcast feed is uploaded as a private object to S3 which cannot be accessed publicly. You can copy the object to a different location in case you want to protect access to the feed. Keep in mind though that the S3 signed URL's expire after a day by default, meaning that clients do need regular access to the feed. In the future, a more robust mechanism will be added to control feed access.
 
 
 Contents of repository
