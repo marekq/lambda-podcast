@@ -4,19 +4,38 @@
 # source; https://github.com/marekq/lambda-podcast
 
 from xml.etree.ElementTree import Element, SubElement, Comment, tostring 
-import boto3, os, time
+import boto3, os, sys, time
 
-# the following environment variables are set - I'll put these as SAM variables in the future
-podcast_name	= 'My serverless podcast'		
-podcast_author	= 'AWS lambda'				
-podcast_desc	= 'My collection of mp3 files'	
-podcast_url		= '.'
-podcast_img 	= '.'
-link_expiry 	= '86400'					
+sys.path.append('./libs')
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.core import patch_all
+
+patch_all()
+
+# set the name of the podcast
+podcast_name	= os.environ['podcast_name']		
+podcast_author	= os.environ['podcast_author']				
+podcast_desc	= os.environ['podcast_desc']
+podcast_path 	= os.environ['podcast_path']
+
+# optionally, add a url and podcast image link to your feed
+podcast_url		= os.environ['podcast_url']
+podcast_img 	= os.environ['podcast_img']
+
+# set the signed url link expiry in seconds, default is 1 day
+link_expiry 	= '86400'	
+
+# retrieve whether the XML should be uploaded as a public or private object (default private)
+s3_acl 			= os.environ['s3_acl']
+
+# connect to the s3 bucket
 s3_bucket		= os.environ['s3_bucket']
+s				= boto3.client('s3')
 
 # create the XML document root
+@xray_recorder.capture("make_root")
 def make_root():
+
 	# add XML headers 
 	rss 		= Element('rss', version = '2.0')
 	rss.set('atom', 'http://www.w3.org/2005/Atom')
@@ -39,12 +58,12 @@ def make_root():
 	SubElement(image, 'link').text = podcast_url
 
 	# create session to s3 music bucket
-	s	= boto3.client('s3')
+	print('retrieving file listing for bucket '+s3_bucket)
 	a	= s.list_objects_v2(Bucket = s3_bucket)
 
 	# check all mp3 files in the bucket
 	for x in a['Contents']:
-		if 'mp3' in x['Key'] and  '/' in x['Key']:
+		if 'mp3' in x['Key'] and '/' in x['Key']:
 
 			# create presigned URL for the MP3
 			z 			= s.generate_presigned_url('get_object', Params = {'Bucket': s3_bucket, 'Key': x['Key']}, ExpiresIn = link_expiry)
@@ -61,10 +80,13 @@ def make_root():
 			SubElement(item, 'enclosure', url = z, length = str(x['Size']), type = 'audio/mpeg')
 			SubElement(item, 'guid').text = x['Key'].strip()
 
+	print('found '+str(a['KeyCount'])+' mp3 files in bucket '+s3_bucket)
+
 	# upload the rss.xml file to S3 - in the future, include "ACL = 'public-read'" as a flag to publish the XML file
-	s.put_object(Bucket = s3_bucket, Body = tostring(rss), Key = 'podcast.xml', ContentType = 'application/xml')
-	print('uploaded XML document of '+str(len(tostring(rss)))+' bytes to https://'+s3_bucket+'.s3.amazonaws.com/podcast.xml')
+	s.put_object(Bucket = s3_bucket, Body = tostring(rss), Key = podcast_path, ContentType = 'application/xml', ACL = s3_acl)
+	print('uploaded XML document of '+str(len(tostring(rss)))+' bytes to https://'+s3_bucket+'.s3.amazonaws.com/'+podcast_path+' with '+s3_acl+' ACL.')
 
 # lambda handler
+@xray_recorder.capture("lambda_handler")
 def handler(event, context):
 	make_root()
