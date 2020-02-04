@@ -25,7 +25,7 @@ podcast_img 	= os.environ['podcast_img']
 # set the signed url link expiry in seconds, default is 1 day
 link_expiry 	= '86400'	
 
-# retrieve whether the XML should be uploaded as a public or private object (default private)
+# retrieve whether the XML should be uploaded as a public ('public-read') or private ('private', default) object. 
 s3_acl 			= os.environ['s3_acl']
 
 # connect to the s3 bucket
@@ -82,7 +82,7 @@ def make_root():
 
 	print('found '+str(a['KeyCount'])+' mp3 files in bucket '+s3_bucket)
 
-	# upload the rss.xml file to S3 - in the future, include "ACL = 'public-read'" as a flag to publish the XML file
+	# upload the rss.xml file to S3 including either a public or private ACL applied to the object
 	s.put_object(Bucket = s3_bucket, Body = tostring(rss), Key = podcast_path, ContentType = 'application/xml', ACL = s3_acl)
 	print('uploaded XML document of '+str(len(tostring(rss)))+' bytes to https://'+s3_bucket+'.s3.amazonaws.com/'+podcast_path+' with '+s3_acl+' ACL.')
 

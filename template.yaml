@@ -12,13 +12,13 @@ Parameters:
     AllowedValues: 
       - public-read
       - private
-    Description: The S3 ACL for the XML object that will be uploaded. Select either private (default) or public read. 
+    Description: The S3 ACL for the XML object that will be uploaded. Select either 'private' (default) or 'public-read'. 
     Default: private
 
   PathPodcast:
     Type: String
     Description: Set the path where the XML file will be uploaded to S3 (default 'podcast.xml' in the root of the bucket).
-    Default: 'podcast.xml'
+    Default: podcast.xml
 
   NamePodcast:
     Type: String

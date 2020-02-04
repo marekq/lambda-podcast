@@ -63,6 +63,8 @@ Roadmap
 
 - [ ] Add an authentication or other security mechanism to restrict public access to the feed. Right now, you can only choose between having the feed fully public or only private to a logged in AWS user, there should be a third option in between for more controlled access.
 
+- [ ] Add support for more than 1000 objects stored in the S3 bucket.
+
 
 Contact
 -------
